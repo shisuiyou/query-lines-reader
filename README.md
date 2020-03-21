@@ -1,2 +1,2 @@
-# multiline-reader
-Select multiline to read file. Support big file for nodejs
+# query-lines-reader
+Query multi lines by reading file. Support big file for nodejs
