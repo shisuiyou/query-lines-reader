@@ -3,6 +3,8 @@ const path = require('path');
 const stream = require('stream');
 const os = require('os');
 const { exec } = require('child_process');
+const readline = require('readline');
+const { once } = require('events');
 
 const MODES = {
     START_END: 'START_END',
@@ -82,19 +84,21 @@ module.exports = class QueryLinesReader{
                     if(error || outError){
                         reject(error || outError)
                     }else{
-                        let total = Number(osTypeSetting.getTotal(totalLine));
+                        let total = +osTypeSetting.getTotal(totalLine);
                         if(osTypeSetting.checkTotal){
                             let realTotal = await this._checkTotal(total).catch(ce => {
                                 reject(ce);
                                 return Promise.reject(ce);
                             });
-                            resolve(Number(realTotal))
+                            resolve(+realTotal)
                         }else{
                             resolve(total)
                         }
                     }
                 }
             )
+        }).catch(async error => {
+            return this.getTotalByReadline();
         })
         
     }
@@ -126,8 +130,21 @@ module.exports = class QueryLinesReader{
 
     }
 
+    async getTotalByReadline(){
+        const rl = readline.createInterface({
+            input: this._readStream,
+            crlfDelay: Infinity
+        });
+        let total = 0;
+        rl.on('line', (line)=>{
+            total ++
+        });
+        await once(rl, 'close');
+        return total;
+    }
+
     async _checkTotal(total){
-        total = Number(total);
+        total = +total;
         let lines = await this._readLines({
             start: total,
             end: total + 1,
@@ -142,9 +159,10 @@ module.exports = class QueryLinesReader{
     async _readLines(singleOptions, total){
         let osTypeSetting = osTypeList[this._getOsType()];
         return new Promise((resolve, reject)=>{
+            
             exec(osTypeSetting.readCommand
-                .replace(/{{start}}/, Number(singleOptions.start) + 1)
-                .replace(/{{end}}/, Number(singleOptions.end))
+                .replace(/{{start}}/, +singleOptions._start + 1)
+                .replace(/{{end}}/, +singleOptions._end)
                 .replace(/{{filePath}}/, this._filePath), 
                 function(error, listLine, outError){
                     if(error || outError){
@@ -156,8 +174,30 @@ module.exports = class QueryLinesReader{
                     
                 }
             )
+
+
         })
 
+    }
+
+    async _readLinesByReadline(singleOptions){
+        const rl = readline.createInterface({
+            input: this._readStream,
+            crlfDelay: Infinity
+        });
+
+        let {_start, _end} = singleOptions,
+            index = 0, 
+            result = [];
+        rl.on('line', (line)=>{
+            if(index >= _start && index < _end){
+                result.push(line);
+            }
+            index ++;
+        });
+
+        await once(rl, 'close');
+        return result;
     }
 
     _getOsType(){
@@ -166,24 +206,30 @@ module.exports = class QueryLinesReader{
 
     _initOptins(options){
         options = options || {};
-        return Object.assign({
+        let _options = Object.assign({
             start: 0,
             end: 10,
             currentPage: 0,
             pageSize: 10,
             // needTotal: false,
             // reverse: false,
-            queryMode: (() => {
-                if(options.hasOwnProperty('start') && options.hasOwnProperty('end')){
-                    return MODES.START_END;
-                }
-                if(options.hasOwnProperty('currentPage') && options.hasOwnProperty('pageSize')){
-                    return MODES.PAGE;
-                }
-
-                return MODES.START_END;
-            })()
+            _start,
+            _end
         }, this._options, options);
+
+        _options._start = _options.start;
+        _options._end = _options.end;
+        if(options.hasOwnProperty('start') && options.hasOwnProperty('end')){
+            _options.queryMode = MODES.START_END;
+        }
+        if(options.hasOwnProperty('currentPage') && options.hasOwnProperty('pageSize')){
+            _options.queryMode = MODES.PAGE;
+
+            _options._start = options.currentPage * options.pageSize;
+            _options._end = (+options.currentPage + 1) * options.pageSize;
+        }
+
+        return _options
     }
 
     _generateResult({singleOptions,lineList,total}){

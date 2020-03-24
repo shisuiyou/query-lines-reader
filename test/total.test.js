@@ -12,6 +12,8 @@ describe('total', function() {
             let total = await queryLinesReader.getTotal()
             console.log(total)
             assert.strictEqual(typeof total, 'number')
+
+            let total2 = await queryLinesReader.getTotalByReadline()
         });
     });
 });
