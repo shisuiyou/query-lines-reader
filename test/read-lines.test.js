@@ -7,11 +7,23 @@ describe('read-lines', function() {
         it('should return lineList', async function() {
             let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/a.txt'), {
                 start: 0,
-                end: 10
+                end: 3,
+                reverse: false
             })
             let lineObj = await queryLinesReader.queryLines()
             console.log(lineObj)
-            assert.strictEqual(lineObj.lineList[0], 'aaa')
+            assert.strictEqual(Array.isArray(lineObj.lineList), true)
+        });
+
+        it('should return reverse lineList', async function() {
+            let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/a.txt'), {
+                start: 0,
+                end: 3,
+                reverse: true
+            })
+            let lineObj = await queryLinesReader.queryLines()
+            console.log(lineObj)
+            assert.strictEqual(Array.isArray(lineObj.lineList), true)
         });
     });
 });
