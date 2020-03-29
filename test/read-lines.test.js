@@ -6,8 +6,8 @@ describe('read-lines', function() {
     describe('command lines', function() {
         it('should return lineList', async function() {
             let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/a.txt'), {
-                start: 0,
-                end: 3,
+                currentPage: 3,
+                pageSize: 2,
                 reverse: false
             })
             let lineObj = await queryLinesReader.queryLines()
@@ -17,8 +17,8 @@ describe('read-lines', function() {
 
         it('should return reverse lineList', async function() {
             let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/a.txt'), {
-                start: 0,
-                end: 3,
+                currentPage: 1,
+                pageSize: 0,
                 reverse: true
             })
             let lineObj = await queryLinesReader.queryLines()

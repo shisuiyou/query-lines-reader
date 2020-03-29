@@ -79,12 +79,12 @@ module.exports = class QueryLinesReader{
         let osTypeSetting = osTypeList[this._getOsType()];
         return new Promise((resolve, reject)=>{
             exec(osTypeSetting
-                .totalCommand.replace(/{{filePath}}/, this._filePath), 
+                .totalCommand.replace(/{{filePath}}/, this._filePath),
                 async (error, totalLine, outError) => {
                     if(error || outError){
                         reject(error || outError)
                     }else{
-                        let total = +osTypeSetting.getTotal(totalLine);
+                        let total = + await osTypeSetting.getTotal(totalLine);
                         if(osTypeSetting.checkTotal){
                             let realTotal = await this._checkTotal(total).catch(ce => {
                                 reject(ce);
@@ -100,12 +100,12 @@ module.exports = class QueryLinesReader{
         }).catch(async error => {
             return this.getTotalByReadline();
         })
-        
+
     }
 
     async queryLines(options){
         // init options
-        let singleOptions = this._initOptins(options);
+        let singleOptions = this._initOptions(options);
 
         let total;
         if(singleOptions.needTotal || singleOptions.reverse){
@@ -167,7 +167,7 @@ module.exports = class QueryLinesReader{
             exec(osTypeSetting.readCommand
                 .replace(/{{start}}/, singleOptions._start + 1)
                 .replace(/{{end}}/, singleOptions._end)
-                .replace(/{{filePath}}/, this._filePath), 
+                .replace(/{{filePath}}/, this._filePath),
                 (error, listLine, outError) => {
                     if(error || outError){
                         reject(error || outError)
@@ -175,11 +175,11 @@ module.exports = class QueryLinesReader{
                         let lines = osTypeSetting.getLineArr(listLine);
                         resolve(lines);
                     }
-                    
+
                 }
             )
-
-
+        }).catch(error => {
+            return this._readLinesByReadline(singleOptions)
         })
 
     }
@@ -191,7 +191,7 @@ module.exports = class QueryLinesReader{
         });
 
         let {_start, _end} = singleOptions,
-            index = 0, 
+            index = 0,
             result = [];
         rl.on('line', (line)=>{
             if(index >= _start && index < _end){
@@ -208,9 +208,10 @@ module.exports = class QueryLinesReader{
         return osTypeMap[(os.type() || '').toLowerCase()]
     }
 
-    _initOptins(options){
+    _initOptions(options){
         options = options || {};
-        let _options = Object.assign({
+        let checkOptions = Object.assign({}, this._options, options);
+        let resultOptions = Object.assign({
             start: 0,
             end: 10,
             currentPage: 0,
@@ -219,28 +220,29 @@ module.exports = class QueryLinesReader{
             // reverse: false,
         }, this._options, options);
 
-        _options._start = _options.start;
-        _options._end = _options.end;
-        if(options.hasOwnProperty('start') && options.hasOwnProperty('end')){
-            _options.queryMode = MODES.START_END;
+        resultOptions._start = resultOptions.start;
+        resultOptions._end = resultOptions.end;
+        if(checkOptions.hasOwnProperty('start') && checkOptions.hasOwnProperty('end')){
+            resultOptions.queryMode = MODES.START_END;
         }
-        if(options.hasOwnProperty('currentPage') && options.hasOwnProperty('pageSize')){
-            _options.queryMode = MODES.PAGE;
+        if(checkOptions.hasOwnProperty('currentPage') && checkOptions.hasOwnProperty('pageSize')){
+            resultOptions.queryMode = MODES.PAGE;
 
-            _options._start = options.currentPage * options.pageSize;
-            _options._end = (+options.currentPage + 1) * options.pageSize;
+            resultOptions._start = resultOptions.currentPage * resultOptions.pageSize;
+            resultOptions._end = (+resultOptions.currentPage + 1) * resultOptions.pageSize;
         }
 
-        if(_options._start < 0){
+        if(resultOptions._start < 0){
             throw new Error('start line must be >= 0');
         }
-        if(_options._end < 0){
+        if(resultOptions._end < 0){
             throw new Error('end line must be >= 0');
         }
-        if(_options._start >=  _options._end){
-            _options._end = _options._start + 1
+        if(resultOptions._start >=  resultOptions._end){
+            resultOptions._end = resultOptions._start + 1
         }
-        return _options
+        resultOptions.needLength = resultOptions._end - resultOptions._start;
+        return resultOptions
     }
 
     _reverseInnerStartEnd(singleOptions, total){
@@ -248,12 +250,12 @@ module.exports = class QueryLinesReader{
             return;
         }
         let {_start, _end} = singleOptions;
-        singleOptions._start = total - _end - 1;
-        singleOptions._end = total - _start - 1;
+        singleOptions._start = total - _end;
+        singleOptions._end = total - _start;
 
     }
 
-    _generateResult({singleOptions,lineList,total}){
+    _generateResult({singleOptions, lineList, total}){
         let result = {
             lineList,
             needTotal: singleOptions.needTotal,
@@ -274,8 +276,16 @@ module.exports = class QueryLinesReader{
             result.pageSize = singleOptions.pageSize;
         }
 
+        if(lineList.length > singleOptions.needLength){
+            lineList.splice(singleOptions.needLength, lineList.length - singleOptions.needLength);
+        }
+
+        if(typeof total !== void(0) && lineList.length > total){
+            lineList.splice(total, lineList.length - total);
+        }
+
         if(singleOptions.reverse){
-            result.lineList.reverse()
+            lineList.reverse()
         }
 
         return result;
