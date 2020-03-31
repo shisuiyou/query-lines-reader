@@ -43,7 +43,7 @@ const osTypeList = {
     windows: {
         totalCommand: 'find /v /c "" {{filePath}}',
         getTotal(totalLine){
-            return totalLine
+            return totalLine.replace(/.*(\D+|^)(\d+)\D*/g, '$2')
         },
     },
 }
@@ -51,19 +51,19 @@ const osTypeList = {
 module.exports = class QueryLinesReader{
     constructor(filePath, options){
         if(typeof filePath === 'string'){
-            this._filePath = filePath;
-            this._readStream = fs.createReadStream(filePath);
-        }else if(filePath instanceof stream){
-            this._readStream = filePath;
-            if(_readStream.path && path.isAbsolute(_readStream.path)){
-                this._filePath = _readStream.path;
+            if(!path.isAbsolute(filePath)){
+                throw new Error('filePath is required');
             }
-        }else if(filePath instanceof Buffer){
-            this._fileBuffer = filePath;
+            this._filePath = filePath;
+        }else if(filePath instanceof stream){
+            if(!(_readStream.path && path.isAbsolute(_readStream.path))){
+                throw new Error('path in fileStream must be absolute');
+            }
+            this._filePath = _readStream.path;
         }
 
         // check file
-        if(!(this._filePath || this._readStream || this._fileBuffer)){
+        if(!this._filePath){
             throw new Error('filePath is required')
         }
 
@@ -77,6 +77,9 @@ module.exports = class QueryLinesReader{
 
     async getTotal(){
         let osTypeSetting = osTypeList[this._getOsType()];
+        if(!(osTypeSetting && osTypeSetting.totalCommand)){
+            return this.getTotalByReadline();
+        }
         return new Promise((resolve, reject)=>{
             exec(osTypeSetting
                 .totalCommand.replace(/{{filePath}}/, this._filePath),
@@ -137,7 +140,7 @@ module.exports = class QueryLinesReader{
 
     async getTotalByReadline(){
         const rl = readline.createInterface({
-            input: this._readStream,
+            input: fs.createReadStream(this._filePath),
             crlfDelay: Infinity
         });
         let total = 0;
@@ -163,6 +166,9 @@ module.exports = class QueryLinesReader{
 
     async _readLines(singleOptions, total){
         let osTypeSetting = osTypeList[this._getOsType()];
+        if(!(osTypeSetting && osTypeSetting.readCommand)){
+            return this._readLinesByReadline(singleOptions)
+        }
         return new Promise((resolve, reject)=>{
             exec(osTypeSetting.readCommand
                 .replace(/{{start}}/, singleOptions._start + 1)
@@ -186,7 +192,7 @@ module.exports = class QueryLinesReader{
 
     async _readLinesByReadline(singleOptions){
         const rl = readline.createInterface({
-            input: this._readStream,
+            input: fs.createReadStream(this._filePath),
             crlfDelay: Infinity
         });
 
