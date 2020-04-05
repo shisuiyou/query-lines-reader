@@ -1,5 +1,6 @@
 const assert = require('assert');
 const path = require('path');
+const fs = require('fs');
 const QueryLinesReader = require('../');
 
 describe('read-lines', function() {
@@ -13,6 +14,7 @@ describe('read-lines', function() {
             let lineObj = await queryLinesReader.queryLines()
             assert.strictEqual(lineObj.lineList[0], 'aaa')
         });
+
         it('should return lineList', async function() {
             let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/mac-a.txt'), {
                 start: 0,
@@ -22,6 +24,7 @@ describe('read-lines', function() {
             let lineObj = await queryLinesReader.queryLines()
             assert.strictEqual(lineObj.lineList.toString(), 'aaa,,bbb,11')
         });
+
         it('should return reverse lineList', async function() {
             let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/mac-a.txt'), {
                 start: 0,
@@ -29,9 +32,10 @@ describe('read-lines', function() {
                 reverse: true
             })
             let lineObj = await queryLinesReader.queryLines()
-            assert.strictEqual(lineObj.lineList.toString(), 'ddd,,333')
+            assert.strictEqual(lineObj.lineList.toString(), 'cfd,abc,ddd')
         });
-        it('should return lineList', async function() {
+
+        it('should return page lineList', async function() {
             let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/mac-a.txt'), {
                 currentPage: 2,
                 pageSize: 1,
@@ -40,14 +44,56 @@ describe('read-lines', function() {
             let lineObj = await queryLinesReader.queryLines()
             assert.strictEqual(lineObj.lineList[0], 'bbb')
         });
-        it('should return reverse lineList', async function() {
+
+        it('should return page reverse lineList', async function() {
             let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/mac-a.txt'), {
                 currentPage: 2,
                 pageSize: 2,
                 reverse: true
             })
             let lineObj = await queryLinesReader.queryLines()
-            assert.strictEqual(lineObj.lineList.toString(), '11,bbb')
+            assert.strictEqual(lineObj.lineList.toString(), '333,')
+        });
+
+        it('should return reverse lineList by stream', async function() {
+            let queryLinesReader = new QueryLinesReader(fs.createReadStream(path.resolve(__dirname, './data/mac-a.txt')), {
+                currentPage: 2,
+                pageSize: 2,
+                reverse: true
+            })
+            let lineObj = await queryLinesReader.queryLines()
+            assert.strictEqual(lineObj.lineList.toString(), '333,')
+        });
+
+        it('should return reverse include lineList', async function() {
+            let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/mac-a.txt'), {
+                currentPage: 0,
+                pageSize: 10,
+                reverse: false,
+                include: 'c'
+            })
+            let lineObj = await queryLinesReader.queryLines()
+            assert.strictEqual(lineObj.lineList.toString(), 'abc,cfd')
+        });
+
+        it('should return reverse include RegExp lineList', async function() {
+            let queryLinesReader = new QueryLinesReader(fs.createReadStream(path.resolve(__dirname, './data/mac-a.txt')), {
+                currentPage: 0,
+                pageSize: 1,
+                reverse: false,
+                include: /b/g
+            })
+            let lineObj = await queryLinesReader.queryLines()
+            assert.strictEqual(lineObj.lineList.toString(), 'bbb')
+        });
+
+        it('should return buffer path lineList', async function() {
+            let queryLinesReader = new QueryLinesReader(fs.createReadStream(Buffer.from(path.resolve(__dirname, './data/mac-a.txt'))), {
+                currentPage: 0,
+                pageSize: 1
+            })
+            let lineObj = await queryLinesReader.queryLines()
+            assert.strictEqual(lineObj.lineList.toString(), 'aaa')
         });
     });
 });

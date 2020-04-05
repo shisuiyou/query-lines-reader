@@ -4,7 +4,7 @@
   "description": "Query multi lines by reading file. Support big file for nodejs",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npx mocha test/read-lines.test.js"
   },
   "repository": {
     "type": "git",
