@@ -3,8 +3,6 @@ const path = require('path');
 const stream = require('stream');
 const { exec } = require('child_process');
 const readline = require('readline');
-const { once } = require('events');
-
 const ProcessLimit = require('./lib/process-limit');
 const OsType = require('./lib/os-type');
 
@@ -168,7 +166,7 @@ module.exports = class QueryLinesReader{
             }
             
         });
-        await once(rl, 'close');
+        await new Promise((resolve)=>{rl.on('close', ()=>{resolve()})});
         return total;
     }
 
@@ -257,7 +255,7 @@ module.exports = class QueryLinesReader{
 
         rl.on('line', handleLine);
 
-        await once(rl, 'close');
+        await new Promise((resolve)=>{rl.on('close', ()=>{resolve()})});
         return result;
     }
 
