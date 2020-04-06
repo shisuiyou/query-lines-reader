@@ -15,42 +15,44 @@ let queryLinesReader = new QueryLinesReader(filePath, options);
 queryLinesReader.queryLines(options).then(res => {});
 
 ```
-#### filePath
-1. file absolute path, example : path.resolve(__dirname, './test.txt')
+### filePath
+1. File absolute path, example: <br>
+path.resolve(__dirname, './test.txt')
 
-2. stream, the stream path is must be absolute, example : fs.createReadStream(path.resolve(__dirname, './test.txt'))
+2. Stream, the stream path is must be absolute, example: <br>
+fs.createReadStream(path.resolve(__dirname, './test.txt'))
 
-3. buffer, example: Buffer.from(path.resolve(__dirname, './test.txt'))
+3. Buffer, example: <br>
+Buffer.from(path.resolve(__dirname, './test.txt'))
 
-4. URL, example new URL('file:///tmp/hello')
+4. URL, example: <br>
+new URL('file:///tmp/hello')
 
-#### options
-##### start && end:
-Type: Number<br>
-start: you need first line number (Default 0)<br>
-end: you need last line number (Default 10)<br>
+### options
+#### start && end:
+* Type: Number<br>
+* start: you need first line number (Default 0)<br>
+* end: you need last line number (Default 10)<br>
 
 the line include `start` exclude `end`.  [start, end) ！！！！
 
-##### pageSize && currentPage
-Type: Number<br>
-pageSize: number of pages per page (Default 0)<br>
-currentPage: current page (Default 10)<br>
+#### pageSize && currentPage
+* Type: Number<br>
+* pageSize: number of pages per page (Default 0)<br>
+* currentPage: current page (Default 10)<br>
 
 #### needTotal
-Type: Boolean<br>
-true will return total lines or not<br>
+* Type: Boolean<br>
+* If true will return total lines or not<br>
 
 #### reverse
-Type: Boolean<br>
-Read direction<br>
-if false, from top to bottom<br>
-if true, from bottom to top<br>
+* Type: Boolean, read direction<br>
+* Tf false, from top to bottom<br>
+* If true, from bottom to top<br>
 
 #### include
-Type: String or RegExp<br>
-string or regular expression<br>
-you can neen it to search file <br>
+* Type: String or RegExp, string or regular expression<br>
+* You can use it to search file <br>
 
 
 ## Example

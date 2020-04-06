@@ -1,55 +1,18 @@
 const fs = require('fs');
 const path = require('path');
 const stream = require('stream');
-const os = require('os');
 const { exec } = require('child_process');
 const readline = require('readline');
 const { once } = require('events');
 
 const ProcessLimit = require('./lib/process-limit');
+const OsType = require('./lib/os-type');
 
 const processLimit = new ProcessLimit();
 
 const MODES = {
     START_END: 'START_END',
     PAGE: 'PAGE'
-}
-
-const osTypeMap = {
-    linux: 'linux',
-    darwin: 'macos',
-    windows_nt: 'windows'
-}
-
-const osTypeList = {
-    linux: {
-        totalCommand: 'wc -l {{filePath}}',
-        readCommand: 'sed -n "{{start}},{{end}}p" {{filePath}}',
-        getTotal(totalLine){
-            return totalLine.replace(/^\D*(\d+).*/g, '$1')
-        },
-        checkTotal: true,
-        getLineArr(listLine){
-            return listLine ? listLine.split(/\r\n?|\n/) : []
-        }
-    },
-    macos: {
-        totalCommand: 'wc -l {{filePath}}',
-        readCommand: 'sed -n "{{start}},{{end}}p" {{filePath}}',
-        getTotal(totalLine){
-            return totalLine.replace(/^\D*(\d+).*/g, '$1')
-        },
-        checkTotal: true,
-        getLineArr(listLine){
-            return listLine ? listLine.split(/\r\n?|\n/) : []
-        }
-    },
-    windows: {
-        totalCommand: 'find /v /c "" {{filePath}}',
-        getTotal(totalLine){
-            return totalLine.replace(/.*(\D+|^)(\d+)\D*/g, '$2')
-        },
-    },
 }
 
 module.exports = class QueryLinesReader{
@@ -89,6 +52,9 @@ module.exports = class QueryLinesReader{
         if(!this._filePath){
             throw new Error('filePath is required')
         }
+
+        // os 
+        this._osType = new OsType();
 
         // init options
         this._options = Object.assign({
@@ -144,8 +110,8 @@ module.exports = class QueryLinesReader{
         if(singleOptions._needStreamReadLine || singleOptions.include){
             return this._getTotalByReadline(singleOptions);
         }
-        let osTypeSetting = osTypeList[this._getOsType()];
-        if(!(osTypeSetting && osTypeSetting.totalCommand)){
+        let totalCommand = this._osType.getTotalCommand({filePath: this._filePath});
+        if(!totalCommand){
             return this._getTotalByReadline(singleOptions);
         }
         if(!processLimit.check()){
@@ -153,25 +119,22 @@ module.exports = class QueryLinesReader{
         }
 
         let tp = new Promise((resolve, reject)=>{
-            exec(osTypeSetting
-                .totalCommand.replace(/{{filePath}}/, this._filePath),
-                async (error, totalLine, outError) => {
-                    if(error || outError){
-                        reject(error || outError)
+            exec(totalCommand, async (error, totalLine, outError) => {
+                if(error || outError){
+                    reject(error || outError)
+                }else{
+                    let total = await this._osType.getTotal(totalLine);
+                    if(this._osType.checkTotal){
+                        let realTotal = await this._checkTotal(total).catch(ce => {
+                            reject(ce);
+                            return Promise.reject(ce);
+                        });
+                        resolve(+realTotal)
                     }else{
-                        let total = + await osTypeSetting.getTotal(totalLine);
-                        if(osTypeSetting.checkTotal){
-                            let realTotal = await this._checkTotal(total).catch(ce => {
-                                reject(ce);
-                                return Promise.reject(ce);
-                            });
-                            resolve(+realTotal)
-                        }else{
-                            resolve(total)
-                        }
+                        resolve(total)
                     }
                 }
-            )
+            })
         }).catch(async error => {
             return this._getTotalByReadline(singleOptions);
         })
@@ -226,8 +189,13 @@ module.exports = class QueryLinesReader{
         if(singleOptions._needStreamReadLine || singleOptions.include){
             return this._readLinesByReadline(singleOptions)
         }
-        let osTypeSetting = osTypeList[this._getOsType()];
-        if(!(osTypeSetting && osTypeSetting.readCommand)){
+        let readCommand = this._osType.getReadCommand({
+            filePath: this._filePath,
+            start: singleOptions._start,
+            end: singleOptions._end
+        });
+
+        if(!readCommand){
             return this._readLinesByReadline(singleOptions)
         }
         if(!processLimit.check()){
@@ -235,20 +203,14 @@ module.exports = class QueryLinesReader{
         }
 
         let rp = new Promise((resolve, reject)=>{
-            exec(osTypeSetting.readCommand
-                .replace(/{{start}}/, singleOptions._start + 1)
-                .replace(/{{end}}/, singleOptions._end)
-                .replace(/{{filePath}}/, this._filePath),
-                (error, listLine, outError) => {
-                    if(error || outError){
-                        reject(error || outError)
-                    }else{
-                        let lines = osTypeSetting.getLineArr(listLine);
-                        resolve(lines);
-                    }
-
+            exec(readCommand, (error, listLine, outError) => {
+                if(error || outError){
+                    reject(error || outError)
+                }else{
+                    let lines = this._osType.getLineArr(listLine);
+                    resolve(lines);
                 }
-            )
+            })
         }).catch(error => {
             return this._readLinesByReadline(singleOptions)
         })
@@ -297,10 +259,6 @@ module.exports = class QueryLinesReader{
 
         await once(rl, 'close');
         return result;
-    }
-
-    _getOsType(){
-        return osTypeMap[(os.type() || '').toLowerCase()]
     }
 
     _initOptions(options){
