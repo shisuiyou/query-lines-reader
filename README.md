@@ -7,14 +7,19 @@ Query multi lines by reading file. Support big file for nodejs
 $ npm install query-lines-reader
 ```
 
+```js
+
+let queryLinesReader = new QueryLinesReader(filePath, options);
+
+queryLinesReader.queryLines(options).then(lineRes => {});
+
+queryLinesReader.getTotal().then(totalRes => {});
+
+```
+
 
 ## Options
 
-```
-let queryLinesReader = new QueryLinesReader(filePath, options);
-queryLinesReader.queryLines(options).then(res => {});
-
-```
 ### filePath
 1. File absolute path, example: <br>
 path.resolve(__dirname, './test.txt')
@@ -54,10 +59,16 @@ the line include `start` exclude `end`.  [start, end) ！！！！
 * Type: String or RegExp, string or regular expression<br>
 * You can use it to search file <br>
 
+### lineRes
+* lineList: lines result<br>
+* total: if options.needTotal is true, this will return<br>
+
+### totalRes
+* Type: Number, file's total line<br>
 
 ## Example
 
-```
+```js
 // From top to bottom
 const path = require('path');
 const QueryLinesReader = require('query-lines-reader');
@@ -73,7 +84,7 @@ queryLinesReader.queryLines({
 
 ```
 
-```
+```js
 // From bottom to top
 const path = require('path');
 const QueryLinesReader = require('query-lines-reader');
@@ -94,7 +105,7 @@ queryLinesReader.queryLines({
 
 ```
 
-```
+```js
 // Pagination
 const path = require('path');
 const QueryLinesReader = require('query-lines-reader');
@@ -110,3 +121,10 @@ queryLinesReader.queryLines({
 });
 
 ```
+
+## Others
+
+```js 
+QueryLinesReader.setProcessNumberOfSingleCpu(10);
+```
+* This api is global api, set process‘s maximum of one cpu. If the maximum number is exceeded, a another strategy of reader will be used
