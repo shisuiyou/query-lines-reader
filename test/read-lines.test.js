@@ -6,7 +6,7 @@ const QueryLinesReader = require('../');
 describe('read-lines', function() {
     describe('command lines', function() {
         it('should return first line', async function() {
-            let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/mac-a.txt'), {
+            let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/a.txt'), {
                 start: 0,
                 end: 0,
                 reverse: false
@@ -16,7 +16,7 @@ describe('read-lines', function() {
         });
 
         it('should return lineList', async function() {
-            let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/mac-a.txt'), {
+            let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/a.txt'), {
                 start: 0,
                 end: 4,
                 reverse: false
@@ -26,7 +26,7 @@ describe('read-lines', function() {
         });
 
         it('should return reverse lineList', async function() {
-            let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/mac-a.txt'), {
+            let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/a.txt'), {
                 start: 0,
                 end: 3,
                 reverse: true
@@ -36,7 +36,7 @@ describe('read-lines', function() {
         });
 
         it('should return page lineList', async function() {
-            let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/mac-a.txt'), {
+            let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/a.txt'), {
                 currentPage: 2,
                 pageSize: 1,
                 reverse: false
@@ -46,7 +46,7 @@ describe('read-lines', function() {
         });
 
         it('should return page reverse lineList', async function() {
-            let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/mac-a.txt'), {
+            let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/a.txt'), {
                 currentPage: 2,
                 pageSize: 2,
                 reverse: true
@@ -56,7 +56,7 @@ describe('read-lines', function() {
         });
 
         it('should return reverse lineList by stream', async function() {
-            let queryLinesReader = new QueryLinesReader(fs.createReadStream(path.resolve(__dirname, './data/mac-a.txt')), {
+            let queryLinesReader = new QueryLinesReader(fs.createReadStream(path.resolve(__dirname, './data/a.txt')), {
                 currentPage: 2,
                 pageSize: 2,
                 reverse: true
@@ -66,7 +66,7 @@ describe('read-lines', function() {
         });
 
         it('should return reverse include lineList', async function() {
-            let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/mac-a.txt'), {
+            let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/a.txt'), {
                 currentPage: 0,
                 pageSize: 10,
                 reverse: false,
@@ -77,7 +77,7 @@ describe('read-lines', function() {
         });
 
         it('should return reverse include RegExp lineList', async function() {
-            let queryLinesReader = new QueryLinesReader(fs.createReadStream(path.resolve(__dirname, './data/mac-a.txt')), {
+            let queryLinesReader = new QueryLinesReader(fs.createReadStream(path.resolve(__dirname, './data/a.txt')), {
                 currentPage: 0,
                 pageSize: 1,
                 reverse: false,
@@ -88,12 +88,41 @@ describe('read-lines', function() {
         });
 
         it('should return buffer path lineList', async function() {
-            let queryLinesReader = new QueryLinesReader(fs.createReadStream(Buffer.from(path.resolve(__dirname, './data/mac-a.txt'))), {
+            let queryLinesReader = new QueryLinesReader(fs.createReadStream(Buffer.from(path.resolve(__dirname, './data/a.txt'))), {
                 currentPage: 0,
                 pageSize: 1
             })
             let lineObj = await queryLinesReader.queryLines()
             assert.strictEqual(lineObj.lineList.toString(), 'aaa')
         });
+
+        // it('should return reverse lineList', async function() {
+        //     let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/big.txt'), {
+        //         start: 5000,
+        //         end: 10000,
+        //         reverse: true
+        //     })
+        //     queryLinesReader.setMinSizeOfCommand(2000*1024)
+        //     let lineObj = await queryLinesReader.queryLines()
+        //     //assert.strictEqual(lineObj.lineList.toString(), 'cfd,abc,ddd')
+        // });
+    });
+
+    describe('command total', function() {
+        it('should return totalLine', async function() {
+            let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './data/a.txt'), {
+                start: 0,
+                end: 4,
+                //include: 'b'
+            })
+            let total = await queryLinesReader.getTotal()
+            //console.log(total)
+            assert.strictEqual(typeof total, 'number')
+
+            let total2 = await queryLinesReader.getTotalByReadline()
+            //console.log(total2)
+
+            QueryLinesReader.setProcessNumberOfSingleCpu()            
+        })
     });
 });

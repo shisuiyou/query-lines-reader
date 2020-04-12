@@ -4,4 +4,6 @@
 
 node_modules
 
+test/data/big.txt
+
 package-lock.json

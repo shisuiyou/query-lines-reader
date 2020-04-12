@@ -61,6 +61,8 @@ module.exports = class QueryLinesReader{
             _needStreamReadLine: needStreamReadLine,
         }, options || {});
 
+        this._minSizeOfCommand = 1.5 * 1024;
+
     }
 
     async getTotal(options){
@@ -103,6 +105,17 @@ module.exports = class QueryLinesReader{
 
     }
 
+    setMinSizeOfCommand(fileSize){
+        if(!fileSize){
+            throw new Error('fileSize must be > 0')
+        }
+        if(typeof fileSize !== 'number'){
+            throw new Error('fileSize must be Number')
+        }
+
+        this._minSizeOfCommand = fileSize;
+    }
+
     async _getTotal(singleOptions){
         singleOptions = singleOptions || {};
         if(singleOptions._needStreamReadLine || singleOptions.include){
@@ -112,6 +125,12 @@ module.exports = class QueryLinesReader{
         if(!totalCommand){
             return this._getTotalByReadline(singleOptions);
         }
+
+        let fileSize = await getFileSize(this._filePath).catch(err => null);
+        if(!fileSize || fileSize < this._minSizeOfCommand){
+            return this._getTotalByReadline(singleOptions);
+        }
+
         if(!processLimit.check()){
             return this._getTotalByReadline(singleOptions);
         }
@@ -196,6 +215,12 @@ module.exports = class QueryLinesReader{
         if(!readCommand){
             return this._readLinesByReadline(singleOptions)
         }
+
+        let fileSize = await getFileSize(this._filePath).catch(err => null);
+        if(!fileSize || fileSize < this._minSizeOfCommand){
+            return this._readLinesByReadline(singleOptions);
+        }
+
         if(!processLimit.check()){
             return this._readLinesByReadline(singleOptions)
         }
@@ -346,4 +371,17 @@ module.exports = class QueryLinesReader{
 
 }
 
-module.exports.setProcessNumberOfSingleCpu = processLimit.setProcessNumberOfSingleCpu.bind(processLimit)
+module.exports.setProcessNumberOfSingleCpu = processLimit.setProcessNumberOfSingleCpu.bind(processLimit);
+
+async function getFileSize(filePath){
+    return new Promise((resolve, reject)=>{
+        fs.stat(filePath, (err, stats)=>{
+            if(err){
+                return reject(err)
+            }
+
+            let size = stats.size;
+            resolve(size / 1024);
+        })
+    })
+}
