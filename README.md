@@ -1,11 +1,13 @@
 # query-lines-reader
-Query multi lines by reading file. Support big file for nodejs
+Query multi lines or pagination by reading file. Support big file for nodejs
 
 ## Install
 
 ```
 $ npm install query-lines-reader
 ```
+
+## [中文文档](#Chinese)
 
 ## Usage
 
@@ -21,12 +23,12 @@ queryLinesReader.getTotal().then(totalRes => {});
 ```
 
 
-You can use the api set a file size.
+You can use the api set a file size.<br>
 The ‘fileSize‘ for different decisions to improve efficiency
 
-We use ‘readline’ module to read the file twice when less than then the size 
-We use system command to get file info when greater than the size 
-default 1.5 M
+We use ‘readline’ module to read the file when less than then the size<br>
+We use system command to get file info when greater than the size<br>
+default 1.5 * 1024 K
 ```js
 
 let queryLinesReader = new QueryLinesReader(filePath, options);
@@ -132,8 +134,16 @@ let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './test.txt'
     pageSize: 10
 });
 
+// first page
 queryLinesReader.queryLines({
     currentPage: 0
+}).then(res => {
+    res.lineList // ['xx', 'xxxx', ...]
+});
+
+// third page
+queryLinesReader.queryLines({
+    currentPage: 2
 }).then(res => {
     res.lineList // ['xx', 'xxxx', ...]
 });
@@ -149,7 +159,7 @@ QueryLinesReader.setProcessNumberOfSingleCpu(2);
 
 
 
-
+<a id="Chinese"></a>
 # query-lines-reader
 高效分页、按行读取文件，支持大文件
 
@@ -177,7 +187,7 @@ setMinSizeOfCommand 这个 API 是设置文件大小的一个值，用不同策�
 
 小于这个值的时候，我们用 ‘readline’ 这个模块来读取文件
 大于这个值的时候，我们使用 系统内部命令 读取文件
-默认是 1.5 兆（1.5M）
+默认是 1.5 * 1024 k
 ```js
 
 let queryLinesReader = new QueryLinesReader(filePath, options);
@@ -283,8 +293,16 @@ let queryLinesReader = new QueryLinesReader(path.resolve(__dirname, './test.txt'
     pageSize: 10
 });
 
+// 第一页
 queryLinesReader.queryLines({
     currentPage: 0
+}).then(res => {
+    res.lineList // ['xx', 'xxxx', ...]
+});
+
+// 第三页
+queryLinesReader.queryLines({
+    currentPage: 2
 }).then(res => {
     res.lineList // ['xx', 'xxxx', ...]
 });

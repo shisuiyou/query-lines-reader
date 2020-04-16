@@ -1,6 +1,6 @@
 {
   "name": "query-lines-reader",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Query multi lines by reading file. Support big file for nodejs",
   "main": "index.js",
   "scripts": {
@@ -13,9 +13,10 @@
   "keywords": [
     "read",
     "line",
-    "multi",
     "file",
-    "query"
+    "pagination",
+    "query",
+    "lines reader"
   ],
   "author": "shisuiyou",
   "license": "MIT",
