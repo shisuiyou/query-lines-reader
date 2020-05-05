@@ -1,6 +1,8 @@
 # query-lines-reader
 Query multi lines or pagination by reading file. Support big file for nodejs
 
+[![npm](https://img.shields.io/npm/v/query-lines-reader?style=flat-square)](https://www.npmjs.com/package/query-lines-reader)
+
 ## Install
 
 ```
